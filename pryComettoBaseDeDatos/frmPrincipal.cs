@@ -13,6 +13,10 @@ namespace pryComettoBaseDeDatos
 {
     public partial class frmPrincipal : Form
     {
+        OleDbConnection conexion;
+        OleDbCommand comando;
+        OleDbDataReader lector;
+
         public frmPrincipal()
         {
             InitializeComponent();
@@ -20,26 +24,57 @@ namespace pryComettoBaseDeDatos
 
         private void btnConectar_Click(object sender, EventArgs e)
         {
-            OleDbConnection conexion = new OleDbConnection("Provider = Microsoft.ACE.OLEDB.12.0; Data Source = BIBLIO.accdb; Persist Security Info = False");
-            OleDbCommand comando = new OleDbCommand();
-            OleDbDataReader dataReader;
+            conexion = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=VERDULEROS.mdb;");
 
-            conexion.Open();
+            try
+            {
+                conexion.Open();
+                MessageBox.Show("Conexión establecida con la base de datos","Conexión Establecida",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                btnMostrar.Enabled = true;
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(error.Message,"Error",MessageBoxButtons.OK,MessageBoxIcon.Warning);
+            }
+        }
+
+        private void btnMostrar_Click(object sender, EventArgs e)
+        {
+            grdDatos.Rows.Clear();
+
+            comando = new OleDbCommand();
 
             comando.Connection = conexion;
             comando.CommandType = CommandType.TableDirect;
-            comando.CommandText = "TITULO";
+            comando.CommandText = "Productos";
 
-            dataReader = comando.ExecuteReader();
-
-            if (dataReader.HasRows)
+            try
             {
-                while (dataReader.Read())
+                lector = comando.ExecuteReader();
+                if (lector.HasRows)
                 {
-                    dataGridView1.Rows.Add(dataReader[0]);
+                    while (lector.Read())
+                    {
+                        if (decimal.Parse(lector[3].ToString()) >= nudDesde.Value && decimal.Parse(lector[3].ToString()) <= nudHasta.Value)
+                        {
+                            grdDatos.Rows.Add(lector[0], lector[1], lector[2], lector[3]);
+                        }
+                    }
+                }
+                if (grdDatos.Rows.Count == 0)
+                {
+                    MessageBox.Show("No se encontraron registros","No encontrados",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                }
+                else
+                {
+                    //MessageBox.Show("Registros encontrados","Encontrados", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
-            conexion.Close();
+            catch (Exception error)
+            {
+                MessageBox.Show(error.Message,"Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
         }
     }
 }
