@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.OleDb;
+using System.IO;
 
 namespace pryComettoBaseDeDatos
 {
@@ -15,7 +16,9 @@ namespace pryComettoBaseDeDatos
     {
         OleDbConnection conexion;
         OleDbCommand comando;
+        OleDbCommand comando_grupos;
         OleDbDataReader lector;
+        OleDbDataReader lector_grupos;
 
         public frmPrincipal()
         {
@@ -24,18 +27,8 @@ namespace pryComettoBaseDeDatos
 
         private void btnConectar_Click(object sender, EventArgs e)
         {
-            conexion = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=VERDULEROS.mdb;");
-
-            try
-            {
-                conexion.Open();
-                MessageBox.Show("Conexión establecida con la base de datos","Conexión Establecida",MessageBoxButtons.OK,MessageBoxIcon.Information);
-                btnMostrar.Enabled = true;
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show(error.Message,"Error",MessageBoxButtons.OK,MessageBoxIcon.Warning);
-            }
+            clsBaseDeDatos clsBaseDeDatos = new clsBaseDeDatos();
+            clsBaseDeDatos.Conectarse("VERDULEROS",btnMostrar);
         }
 
         private void btnMostrar_Click(object sender, EventArgs e)
@@ -43,10 +36,17 @@ namespace pryComettoBaseDeDatos
             grdDatos.Rows.Clear();
 
             comando = new OleDbCommand();
+            comando_grupos = new OleDbCommand();
 
             comando.Connection = conexion;
             comando.CommandType = CommandType.TableDirect;
             comando.CommandText = "Productos";
+
+            comando_grupos.Connection = conexion;
+            comando_grupos.CommandType = CommandType.TableDirect;
+            comando_grupos.CommandText = "Grupos";
+
+            string grupo = "";
 
             try
             {
@@ -55,19 +55,24 @@ namespace pryComettoBaseDeDatos
                 {
                     while (lector.Read())
                     {
+                        lector_grupos = comando_grupos.ExecuteReader();
+                        while (lector_grupos.Read())
+                        {
+                            if (lector_grupos[0].ToString() == lector[2].ToString())
+                            {
+                                grupo = lector_grupos[1].ToString();
+                            }
+                        }
+                        lector_grupos.Close();
                         if (decimal.Parse(lector[3].ToString()) >= nudDesde.Value && decimal.Parse(lector[3].ToString()) <= nudHasta.Value)
                         {
-                            grdDatos.Rows.Add(lector[0], lector[1], lector[2], lector[3]);
+                            grdDatos.Rows.Add(lector[0], lector[1], grupo, lector[3]);
                         }
                     }
                 }
                 if (grdDatos.Rows.Count == 0)
                 {
                     MessageBox.Show("No se encontraron registros","No encontrados",MessageBoxButtons.OK,MessageBoxIcon.Information);
-                }
-                else
-                {
-                    //MessageBox.Show("Registros encontrados","Encontrados", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception error)
